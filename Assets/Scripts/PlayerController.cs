@@ -16,19 +16,33 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
     public class GrapplePoint
     {
         public Vector2 pos;
+        public Wrappable hitObject;
 
         public GrapplePoint(Vector2 pos)
         {
             this.pos = pos;
         }
+
+        public GrapplePoint(Vector2 pos, Wrappable hitObject)
+        {
+            this.pos = pos;
+            this.hitObject = hitObject;
+        }
+
+        public GrapplePoint(RaycastHit2D hit)
+        {
+            this.pos = hit.point;
+            this.hitObject = hit.collider.GetComponent<Wrappable>();
+        }
     }
+
+
     private PlayerControls controls;
     Rigidbody2D rb;
     DistanceJoint2D distanceJoint;
 
     bool grappling;
 
-    public GameObject grapplePoint;
     public LineRenderer rope;
     private LinkedList<GrapplePoint> grapplePoints;
     private float ropeLength;
@@ -108,7 +122,7 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
 
         if (cornerHit.collider && (cornerHit.point - firstPoint.pos).magnitude > 0.1f)
         {
-            grapplePoints.AddLast(new GrapplePoint(cornerHit.point));
+            grapplePoints.AddLast(new GrapplePoint(cornerHit));
         }
     }
 
@@ -198,7 +212,7 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
         if (hit.collider)
         {
             Vector2 dir = hit.point - (Vector2)transform.position;
-            grapplePoints.AddLast(new GrapplePoint(hit.point));
+            grapplePoints.AddLast(new GrapplePoint(hit));
             grappling = true;
             rope.enabled = true;
             ropeLength = dir.magnitude;
