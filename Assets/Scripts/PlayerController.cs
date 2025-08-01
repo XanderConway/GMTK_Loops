@@ -12,23 +12,14 @@ using UnityEngineInternal;
 public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
 {
 
+    // TODO: We can store information about sides and directions for more consistent unwrapping
     public class GrapplePoint
     {
         public Vector2 pos;
-        public Vector2 dir;
-        public int side;
 
         public GrapplePoint(Vector2 pos)
         {
             this.pos = pos;
-            this.dir = Vector2.zero;
-        }
-
-        public GrapplePoint(Vector2 pos, Vector2 dir, int side)
-        {
-            this.pos = pos;
-            this.dir = dir;
-            this.side = side;
         }
     }
     private PlayerControls controls;
@@ -77,61 +68,60 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
 
     }
 
+    void UnwrapCorners()
+    {
+        GrapplePoint firstPoint = grapplePoints.Last.Value;
+        Vector2 firstDir = firstPoint.pos - (Vector2)transform.position;
+
+        // Check if we can unwrap around any corners
+        bool checkPoints = true;
+        while (checkPoints && grapplePoints.Count > 1)
+        {
+            GrapplePoint secondPoint = grapplePoints.Last.Previous.Value;
+            Vector2 secondDir = secondPoint.pos - (Vector2)transform.position;
+
+            // Check if we have line of sight to this point
+            RaycastHit2D secondHit = Physics2D.Raycast(transform.position, secondDir, secondDir.magnitude * 0.999f, LayerMask.GetMask("Terrain"));
+
+            // 
+            if (secondHit.collider == null && Vector2.Dot(firstDir.normalized, secondDir.normalized) > 0.9)
+            {
+                grapplePoints.RemoveLast();
+
+                firstPoint = grapplePoints.Last.Value;
+                firstDir = firstPoint.pos - (Vector2)transform.position;
+            }
+            else
+            {
+                checkPoints = false;
+            }
+        }
+    }
+
+    void WrapCorners()
+    {
+        GrapplePoint firstPoint = grapplePoints.Last.Value;
+        Vector2 firstDir = firstPoint.pos - (Vector2)transform.position;
+
+        // Check if there are any corners we should wrap around
+        RaycastHit2D cornerHit = Physics2D.Raycast(transform.position, firstDir, firstDir.magnitude, LayerMask.GetMask("Terrain"));
+
+        if (cornerHit.collider && (cornerHit.point - firstPoint.pos).magnitude > 0.1f)
+        {
+            grapplePoints.AddLast(new GrapplePoint(cornerHit.point));
+        }
+    }
+
     public void FixedUpdate()
     {
+
         Vector2 currvel = rb.velocity;
 
         if (grappling)
         {
-
-            GrapplePoint firstPoint = grapplePoints.Last.Value;
-            Vector2 firstDir = firstPoint.pos - (Vector2)transform.position;
-
-            // Check if we can unwrap around any corners
-            bool checkPoints = true;
-            while(checkPoints && grapplePoints.Count > 1)
-            {
-                GrapplePoint secondPoint = grapplePoints.Last.Previous.Value;
-
-                Vector2 prevPerp = new Vector2(secondPoint.dir.y, -secondPoint.dir.x);
-
-                float dot = Vector2.Dot(prevPerp, firstDir);
-                float currSide = Mathf.Sign(dot);
-
-                if (currSide != 0 && pre)
-                {
-                    firstPoint = grapplePoints.Last.Value;
-                    grapplePoints.RemoveLast();
-                }
-                else
-                {
-                    checkPoints = false;
-                }
-                   
-            }
-
-            grapplePoints.Last.Value.dir = firstDir;
-
-
-            // Check if there are any corners we should wrap around
-            RaycastHit2D cornerHit = Physics2D.Raycast(transform.position, firstDir, firstDir.magnitude, LayerMask.GetMask("Terrain"));
-
-            if (cornerHit.collider)
-            {
-                Vector2 newDir = cornerHit.point - (Vector2)transform.position;
-
-                Vector2 perp = new Vector2(firstPoint.dir.y, -firstPoint.dir.x);
-
-                // This should never be zero
-                float sideDot = Vector2.Dot(perp, newDir);
-
-                if (Mathf.Abs(sideDot) > 0)
-                {
-                    grapplePoints.AddLast(new GrapplePoint(cornerHit.point, firstDir, sideDot > 0));
-                }
-            }
-
-
+            UnwrapCorners();
+            WrapCorners();
+        
             // Set the grapple object
             Vector3 rotationPoint = grapplePoints.Last.Value.pos;
             Vector2 grappleDir = rotationPoint - transform.position;
@@ -208,7 +198,7 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
         if (hit.collider)
         {
             Vector2 dir = hit.point - (Vector2)transform.position;
-            grapplePoints.AddLast(new GrapplePoint(hit.point, dir, false));
+            grapplePoints.AddLast(new GrapplePoint(hit.point));
             grappling = true;
             rope.enabled = true;
             ropeLength = dir.magnitude;
@@ -256,7 +246,6 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
             foreach (GrapplePoint p in grapplePoints)
             {
                 Gizmos.DrawSphere((Vector2)p.pos, 0.2f);
-                Gizmos.DrawLine(p.pos, p.pos + p.dir.Perpendicular1().normalized * 2);
             }
         }
 
