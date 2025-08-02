@@ -6,6 +6,7 @@ using UnityEditor.Experimental.GraphView;
 using UnityEditor.SceneManagement;
 using UnityEditor.UI;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.InputSystem;
 using UnityEngineInternal;
 
@@ -34,6 +35,11 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
             this.pos = hit.point;
             this.hitObject = hit.collider.GetComponent<Wrappable>();
         }
+
+        public static bool sameObject(GrapplePoint p1, GrapplePoint p2)
+        {
+            return p1.hitObject == p2.hitObject && p1.hitObject != null;
+        }
     }
 
 
@@ -45,7 +51,11 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
 
     public LineRenderer rope;
     private LinkedList<GrapplePoint> grapplePoints;
+    private HashSet<Wrappable> wrappableObjects; // Objects that are wrappable that have been hit by the current grapple
+
     private float ropeLength;
+
+    public Camera cam;
 
     public float moveSpeed = 1f;
     public float swingSpeed = 0.1f;
@@ -73,6 +83,7 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
         rope.enabled = false;
 
         grapplePoints = new LinkedList<GrapplePoint>();
+        wrappableObjects = new HashSet<Wrappable>();
 
 
     }
@@ -98,9 +109,22 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
             RaycastHit2D secondHit = Physics2D.Raycast(transform.position, secondDir, secondDir.magnitude * 0.999f, LayerMask.GetMask("Terrain"));
 
             // 
-            if (secondHit.collider == null && Vector2.Dot(firstDir.normalized, secondDir.normalized) > 0.9)
+            if (secondHit.collider == null && Vector2.Dot(firstDir.normalized, secondDir.normalized) > 0.99)
             {
+
+                GrapplePoint lastPoint = grapplePoints.Last.Value;
                 grapplePoints.RemoveLast();
+
+                if(lastPoint.hitObject != null)
+                {
+                    if(grapplePoints.Count == 0 || !GrapplePoint.sameObject(lastPoint, grapplePoints.Last.Value))
+                    {
+                        lastPoint.hitObject.wraps.RemoveLast();
+                    } else
+                    {
+                        lastPoint.hitObject.addAngle(lastPoint, grapplePoints.Last.Value);
+                    }
+                } 
 
                 firstPoint = grapplePoints.Last.Value;
                 firstDir = firstPoint.pos - (Vector2)transform.position;
@@ -108,6 +132,25 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
             else
             {
                 checkPoints = false;
+            }
+        }
+    }
+
+    // Sets up the wrapping for the object
+    private void configureWrappings(GrapplePoint newPoint)
+    {
+        // If this is a wrappable object, add a new wrap if it's not the same as the last, otherwise incremenent current
+        if (newPoint.hitObject != null)
+        {
+            wrappableObjects.Add(newPoint.hitObject);
+            if (grapplePoints.Count == 0 || !GrapplePoint.sameObject(newPoint, grapplePoints.Last.Value))
+            {
+                newPoint.hitObject.wraps.AddLast(0);
+            }
+            else
+            {
+                Debug.Assert(newPoint.hitObject.wraps.Count > 0);
+                newPoint.hitObject.addAngle(grapplePoints.Last.Value, newPoint);
             }
         }
     }
@@ -122,7 +165,11 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
 
         if (cornerHit.collider && (cornerHit.point - firstPoint.pos).magnitude > 0.1f)
         {
-            grapplePoints.AddLast(new GrapplePoint(cornerHit));
+            GrapplePoint newPoint = new GrapplePoint(cornerHit);
+
+            configureWrappings(newPoint);
+
+            grapplePoints.AddLast(newPoint);
         }
     }
 
@@ -212,10 +259,15 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
         if (hit.collider)
         {
             Vector2 dir = hit.point - (Vector2)transform.position;
-            grapplePoints.AddLast(new GrapplePoint(hit));
+
+            GrapplePoint newPoint = new GrapplePoint(hit);
+            configureWrappings(newPoint);
+
+            grapplePoints.AddLast(newPoint);
+
+
             grappling = true;
             rope.enabled = true;
-            ropeLength = dir.magnitude;
         }
     }
 
@@ -229,9 +281,16 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
         {
             grappling = false;
             rope.enabled = false;
-            Debug.Log("Ending grapple");
+
+            // Idea: Have an id 0, 1 for the current grapple, and have the wrappable class clear it's own list if it's id is different
+            foreach(Wrappable wrapObj in wrappableObjects)
+            {
+                wrapObj.onRelease();
+            }
+
+            wrappableObjects.Clear();
             grapplePoints.Clear();
-        }
+        }   
     }
 
     public void OnMove(InputAction.CallbackContext context)
