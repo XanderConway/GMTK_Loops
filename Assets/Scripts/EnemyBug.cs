@@ -28,7 +28,7 @@ public class EnemyBug : Wrappable
         if(wrapped)
         {
             Instantiate(splat, transform.position + (Vector3)centerOffset, Quaternion.identity);
-            Destroy(gameObject);
+            gameObject.SetActive(false);
         }
     }
 }

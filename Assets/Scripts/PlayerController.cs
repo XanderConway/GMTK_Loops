@@ -1,14 +1,6 @@
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using Unity.VisualScripting;
-using UnityEditor.Experimental.GraphView;
-using UnityEditor.SceneManagement;
-using UnityEditor.UI;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.InputSystem;
-using UnityEngineInternal;
 
 public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
 {
@@ -44,10 +36,11 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
 
 
     private PlayerControls controls;
-    Rigidbody2D rb;
+    public Rigidbody2D rb;
     DistanceJoint2D distanceJoint;
 
     bool grappling;
+
 
     public LineRenderer rope;
     private LinkedList<GrapplePoint> grapplePoints;
@@ -59,12 +52,18 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
 
     public float moveSpeed = 1f;
     public float swingSpeed = 0.1f;
+    public float climbSpeed = 0.2f;
     public float jumpVel = 5f;
 
     public float airResitance = 0.1f;
 
-    float moveVec;
+    [HideInInspector]
+    public Vector2 moveVec;
+
     bool jumpPressed;
+
+    [HideInInspector] // Made visible for animation purposes
+    public bool grounded;
 
     public float groundRad = 1f;
     public float groundDist = 1f;
@@ -178,6 +177,9 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
 
         Vector2 currvel = rb.velocity;
 
+        RaycastHit2D hit = Physics2D.CircleCast(transform.position, groundDist, Vector2.down, groundRad, LayerMask.GetMask("Terrain"));
+        grounded = hit.collider != null;
+
         if (grappling)
         {
             UnwrapCorners();
@@ -185,21 +187,42 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
         
             // Set the grapple object
             Vector3 rotationPoint = grapplePoints.Last.Value.pos;
-            Vector2 grappleDir = rotationPoint - transform.position;
+            Vector2 grappleDir = (rotationPoint - transform.position);
 
             distanceJoint.enabled = true;
             distanceJoint.connectedAnchor = rotationPoint;
             distanceJoint.distance = grappleDir.magnitude;
 
-            // Move perpendicular to the rope
-            Vector2 perpDir = new Vector2(grappleDir.y, -grappleDir.x);
-            currvel += perpDir * moveVec * swingSpeed;
+            Vector2 perpDir = new Vector2(grappleDir.y, -grappleDir.x).normalized;
+
+            //if(perpDir.x < 0)
+            //{
+            //    perpDir = -perpDir;
+            //}
+            currvel += perpDir * swingSpeed * moveVec.x;
+
+
+            distanceJoint.distance -= moveVec.y * climbSpeed;
+
+
+            // Turn movement perpendicular to the rope into momentum, and the rest into climbing
+            //currvel += perpDir * Vector2.Dot(perpDir, moveVec) * swingSpeed;
+            //distanceJoint.distance -= Vector2.Dot(grappleDir.normalized, moveVec) * climbSpeed;
+
+
+            // Move along the rope
+            //if(climbVec != 0)
+            //{
+            //    distanceJoint.distance -= climbVec * climbSpeed;
+            //}
+
+
         }
         else
         {
             distanceJoint.enabled = false;
 
-            float desiredMotion = moveSpeed * moveVec;
+            float desiredMotion = moveSpeed * moveVec.x;
 
             if (currvel.x > 0 && desiredMotion > 0)
             {
@@ -214,19 +237,15 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
                 // TODO, can add some smoothing
                 currvel.x = desiredMotion;
             }
+        }
 
-            // TODO If this motion causes us to hit a wall, kill velocity
-            RaycastHit2D hit = Physics2D.CircleCast(transform.position, groundDist, Vector2.down, groundRad, LayerMask.GetMask("Terrain"));
-            bool grounded = hit.collider != null;
-
-            if (jumpPressed)
+        if (jumpPressed)
+        {
+            if (grounded)
             {
-                if (grounded)
-                {
-                    currvel.y = jumpVel;
-                }
-                jumpPressed = false;
+                currvel.y = jumpVel;
             }
+            jumpPressed = false;
         }
 
         rb.velocity = currvel;
@@ -235,6 +254,28 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
     // Update is called once per frame
     void Update()
     {
+        if(grapplePressed)
+        {
+            Grapple();
+            grapplePressed = false;
+        }
+
+        if(grappleReleased)
+        {
+            grappling = false;
+            rope.enabled = false;
+
+            // Idea: Have an id 0, 1 for the current grapple, and have the wrappable class clear it's own list if it's id is different
+            foreach (Wrappable wrapObj in wrappableObjects)
+            {
+                wrapObj.onRelease();
+            }
+
+            wrappableObjects.Clear();
+            grapplePoints.Clear();
+            grappleReleased = false;
+        }
+
         if (grappling)
         {
             rope.positionCount = grapplePoints.Count + 1;
@@ -271,31 +312,23 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
         }
     }
 
+    bool grapplePressed = false;
+    bool grappleReleased = false;
     public void OnGrapple(InputAction.CallbackContext context)
     {
         if (context.started)
         {
-            Grapple();
+            grapplePressed = true; // Added to resolve some weird error
         }
         else if (context.canceled)
         {
-            grappling = false;
-            rope.enabled = false;
-
-            // Idea: Have an id 0, 1 for the current grapple, and have the wrappable class clear it's own list if it's id is different
-            foreach(Wrappable wrapObj in wrappableObjects)
-            {
-                wrapObj.onRelease();
-            }
-
-            wrappableObjects.Clear();
-            grapplePoints.Clear();
-        }   
+            grappleReleased = true;
+        }
     }
 
     public void OnMove(InputAction.CallbackContext context)
     {
-        moveVec = context.ReadValue<float>();
+        moveVec = context.ReadValue<Vector2>();
     }
 
     public void OnJump(InputAction.CallbackContext context)
@@ -323,6 +356,4 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
         }
 
     }
-
-
 }

@@ -25,7 +25,7 @@ public abstract class Wrappable : MonoBehaviour
         Vector2 dir1 = p1.pos - center;
         Vector2 dir2 = p2.pos - center;
 
-        float angle = Vector2.Angle(dir1, dir2);
+        float angle = Vector2.SignedAngle(dir1, dir2);
 
         wraps.Last.Value += angle;
     }
