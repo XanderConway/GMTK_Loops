@@ -84,6 +84,10 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 6
       objectReference: {fileID: 0}
+    - target: {fileID: -1206874426333947015, guid: 2435e853158c85e4694ec6ae7c4a21eb, type: 3}
+      propertyPath: m_Materials.Array.data[3]
+      value: 
+      objectReference: {fileID: 2100000, guid: fee4ef8fa68d49f4c806540b9e79e726, type: 2}
     - target: {fileID: 919132149155446097, guid: 2435e853158c85e4694ec6ae7c4a21eb, type: 3}
       propertyPath: m_Name
       value: GigaFly
