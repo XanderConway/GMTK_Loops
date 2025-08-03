@@ -5,15 +5,15 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-public class LevelGoal : MonoBehaviour
+
+public class LevelGoal : MonoBehaviour, IFadeObserver
 {
     public string nextLevel;
     public List<EnemyBug> enemies;
 
     public Image fadeToBlack;
 
-    private float timer = 0;
-    bool levelEnd;
+    private bool over;
     // Start is called before the first frame update
     void Start()
     {
@@ -39,26 +39,16 @@ public class LevelGoal : MonoBehaviour
                 }
             }
 
-            if (allDead)
+            if (allDead && !over)
             {
-
-                levelEnd = true;
+                over = true;
+                ScreenFader.Instance.TriggerFade(Color.black, this);
             }
         }
     }
 
-    // Update is called once per frame
-    void Update()
+    public void FadeComplete()
     {
-        if (levelEnd)
-        {
-            timer += Time.deltaTime;
-
-            fadeToBlack.color = new Vector4(0, 0, 0, timer);
-            if (timer > 1)
-            {
-                SceneManager.LoadScene(nextLevel);
-            }
-        }
+        SceneManager.LoadScene(nextLevel);
     }
 }
