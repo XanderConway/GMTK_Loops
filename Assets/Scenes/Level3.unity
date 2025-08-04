@@ -1009,6 +1009,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 6475052314622582542, guid: e25de50696eb90e44afe0bd6a79d0bd6, type: 3}
+      propertyPath: m_Points.Array.data[0].x
+      value: 2.5980287
+      objectReference: {fileID: 0}
+    - target: {fileID: 6475052314622582542, guid: e25de50696eb90e44afe0bd6a79d0bd6, type: 3}
+      propertyPath: m_Points.Array.data[0].y
+      value: 0.7432425
+      objectReference: {fileID: 0}
+    - target: {fileID: 6475052314622582542, guid: e25de50696eb90e44afe0bd6a79d0bd6, type: 3}
+      propertyPath: m_Points.Array.data[16].x
+      value: 2.3782408
+      objectReference: {fileID: 0}
+    - target: {fileID: 6475052314622582542, guid: e25de50696eb90e44afe0bd6a79d0bd6, type: 3}
+      propertyPath: m_Points.Array.data[16].y
+      value: 0.6713785
+      objectReference: {fileID: 0}
     - target: {fileID: 8098309175897472931, guid: e25de50696eb90e44afe0bd6a79d0bd6, type: 3}
       propertyPath: m_Name
       value: branch
@@ -1998,6 +2014,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 76ebe6729ec78bb4aae97d5a80f79db6, type: 3}
+--- !u!114 &139674957253959801 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 581362311969222379, guid: 76ebe6729ec78bb4aae97d5a80f79db6, type: 3}
+  m_PrefabInstance: {fileID: 139674957253959800}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!4 &2168108090485428776 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 227892938914229680, guid: 0585cfca8cb6e904cbf325b8bc69e4c6, type: 3}
@@ -2015,6 +2042,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Main Camera
       objectReference: {fileID: 0}
+    - target: {fileID: 1976568044018109574, guid: b8486f515f4db4640a95ca2d88cd62b7, type: 3}
+      propertyPath: image
+      value: 
+      objectReference: {fileID: 139674957253959801}
     - target: {fileID: 4639838972217784544, guid: b8486f515f4db4640a95ca2d88cd62b7, type: 3}
       propertyPath: m_LocalPosition.x
       value: -4.7
@@ -2168,6 +2199,10 @@ PrefabInstance:
     - target: {fileID: 5929643065222130906, guid: 293c1b4d8fed80942abc797668c0be90, type: 3}
       propertyPath: m_Name
       value: LevelEnd
+      objectReference: {fileID: 0}
+    - target: {fileID: 7262748826056610618, guid: 293c1b4d8fed80942abc797668c0be90, type: 3}
+      propertyPath: nextLevel
+      value: Level4
       objectReference: {fileID: 0}
     - target: {fileID: 7262748826056610618, guid: 293c1b4d8fed80942abc797668c0be90, type: 3}
       propertyPath: fadeToBlack

@@ -205,18 +205,6 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
             distanceJoint.distance -= moveVec.y * climbSpeed;
 
 
-            // Turn movement perpendicular to the rope into momentum, and the rest into climbing
-            //currvel += perpDir * Vector2.Dot(perpDir, moveVec) * swingSpeed;
-            //distanceJoint.distance -= Vector2.Dot(grappleDir.normalized, moveVec) * climbSpeed;
-
-
-            // Move along the rope
-            //if(climbVec != 0)
-            //{
-            //    distanceJoint.distance -= climbVec * climbSpeed;
-            //}
-
-
         }
         else
         {
@@ -295,7 +283,7 @@ public class PlayerController : MonoBehaviour, PlayerControls.IPlayerActions
     void Grapple()
     {
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, (mousePos - (Vector2)transform.position), float.PositiveInfinity, LayerMask.GetMask("Terrain"));
+        RaycastHit2D hit = Physics2D.CircleCast(transform.position, 0.5f, (mousePos - (Vector2)transform.position), float.PositiveInfinity, LayerMask.GetMask("Terrain"));
 
         if (hit.collider)
         {

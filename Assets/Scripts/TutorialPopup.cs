@@ -32,7 +32,6 @@ public class TutorialPopup : MonoBehaviour
     {
         if(collision.gameObject.GetComponent<PlayerController>() != null)
         {
-            Debug.Log("entered");
             if(popUp != null)
                 popUp.SetActive(true);
         }
